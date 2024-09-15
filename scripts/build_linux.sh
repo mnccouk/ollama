@@ -6,7 +6,8 @@ export VERSION=${VERSION:-$(git describe --tags --first-parent --abbrev=7 --long
 export GOFLAGS="'-ldflags=-w -s \"-X=github.com/ollama/ollama/version.Version=$VERSION\" \"-X=github.com/ollama/ollama/server.mode=release\"'"
 GZIP=$(which pigz 2>/dev/null || echo "gzip")
 
-BUILD_ARCH=${BUILD_ARCH:-"amd64 arm64"}
+#BUILD_ARCH=${BUILD_ARCH:-"amd64 arm64"}
+BUILD_ARCH=${BUILD_ARCH:-"amd64"}
 export AMDGPU_TARGETS=${AMDGPU_TARGETS:=""}
 mkdir -p dist
 

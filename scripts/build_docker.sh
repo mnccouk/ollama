@@ -13,7 +13,7 @@ DOCKER_ORG=${DOCKER_ORG:-"ollama"}
 RELEASE_IMAGE_REPO=${RELEASE_IMAGE_REPO:-"${DOCKER_ORG}/release"}
 FINAL_IMAGE_REPO=${FINAL_IMAGE_REPO:-"${DOCKER_ORG}/ollama"}
 
-BUILD_ARCH=${BUILD_ARCH:-"amd64 arm64"}
+BUILD_ARCH=${BUILD_ARCH:-"amd64"}
 
 # Set PUSH to a non-empty string to trigger push instead of load
 PUSH=${PUSH:-""}
