@@ -8,6 +8,41 @@
 
 Get up and running with large language models.
 
+### Linux with rx580 Radeon GPU
+
+This branch is has had changes for building on amd64 architecture(arm has been commented out in the Docker file) so as Ollama works with 
+rx590 Redeon GPU.
+
+It should be considered experimental.
+
+I've only been testing using the docker build.
+
+Make sure docker is installed and running ok, and the docker host machine has rocm 5.7.1 libraries installed.
+
+Follow this documentation for rocm installation, just substitute the 5.7.0 references to 5.7.1 in the documentation.
+--https://rocm.docs.amd.com/en/docs-5.7.0/deploy/linux/os-native/install.html
+
+To build
+
+```
+./scripts/build_docker.sh
+
+```
+After that has compiled successfully 
+
+Then to start a container using the image 
+```
+
+docker run -e HIP_PATH=/opt/rocm/lib/ -e LD_LIBRARY_PATH=/opt/rocm/lib --device /dev/kfd --device /dev/dri -v ollama:/root/.ollama -p 11434:11434 --name ollama_gpu ollama/release:0.3.10-rc1-2-g56318fb-dirty-rocm
+
+```  
+But make sure to change the tag "0.3.10-rc1-2-g56318fb-dirty-rocm" to what gets built from your build process. This is shown in the last phase of the build where it exports the images.
+
+Once running, test it out
+
+```
+docker exec -it ollama_gpu ollama run llama3.1
+```
 ### macOS
 
 [Download](https://ollama.com/download/Ollama-darwin.zip)
