@@ -15,7 +15,7 @@ rx590 Redeon GPU.
 
 It should be considered experimental.
 
-I've only been testing using the docker build.
+I've only been testing using the docker build, using ubuntu 22.04.04 LTS
 
 Make sure docker is installed and running ok, and the docker host machine has rocm 5.7.1 libraries installed.
 
