@@ -10,12 +10,12 @@ Get up and running with large language models.
 
 ### Linux with rx580 Radeon GPU
 
-This branch is has had changes for building on amd64 architecture(arm has been commented out in the Docker file) so as Ollama works with 
+This branch is has had changes for building on amd64 architecture(arm has been commented out in the Docker file- just for build performance) so as Ollama works with 
 rx590 Redeon GPU.
 
 It should be considered experimental.
 
-I've only been testing using the docker build.
+I've only been testing using the docker build, using ubuntu 22.04.04 LTS
 
 Make sure docker is installed and running ok, and the docker host machine has rocm 5.7.1 libraries installed.
 
