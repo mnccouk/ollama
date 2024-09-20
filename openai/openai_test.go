@@ -102,9 +102,9 @@ func TestChatMiddleware(t *testing.T) {
 					"num_predict":       999.0, // float because JSON doesn't distinguish between float and int
 					"seed":              123.0,
 					"stop":              []any{"\n", "stop"},
-					"temperature":       6.0,
-					"frequency_penalty": 8.0,
-					"presence_penalty":  10.0,
+					"temperature":       3.0,
+					"frequency_penalty": 4.0,
+					"presence_penalty":  5.0,
 					"top_p":             6.0,
 				},
 				Format: "json",
@@ -275,7 +275,7 @@ func TestCompletionsMiddleware(t *testing.T) {
 				Options: map[string]any{
 					"frequency_penalty": 0.0,
 					"presence_penalty":  0.0,
-					"temperature":       1.6,
+					"temperature":       0.8,
 					"top_p":             1.0,
 					"stop":              []any{"\n", "stop"},
 				},
