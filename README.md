@@ -25,6 +25,8 @@ Follow this documentation for rocm installation, just substitute the 5.7.0 refer
 To build
 
 ```
+export VERSION=0.0.0
+
 ./scripts/build_docker.sh
 
 ```
