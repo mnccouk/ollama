@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ollama_gpu:
+    image: ollama/ollama:2d680d5-dirty-rocm
+    container_name: ollama_gpu_3
+    environment:
+      - HIP_PATH=/opt/rocm/lib/
+      - LD_LIBRARY_PATH=/opt/rocm/lib
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+volumes:
+  ollama:
