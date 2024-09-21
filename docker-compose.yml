@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   ollama_gpu:
-    image: ollama/ollama:2d680d5-dirty-rocm
+    image: ollama/ollama:0.0.0-rocm
     container_name: ollama_gpu_3
     environment:
       - HIP_PATH=/opt/rocm/lib/
