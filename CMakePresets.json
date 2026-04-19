@@ -87,6 +87,16 @@
       }
     },
     {
+      "name": "ROCm 5 Polaris",
+      "inherits": [ "ROCm" ],
+      "cacheVariables": {
+        "CMAKE_HIP_FLAGS": "-parallel-jobs=4",
+        "AMDGPU_TARGETS": "gfx803",
+        "OLLAMA_RUNNER_DIR": "rocm",
+        "OLLAMA_POLARIS_ROCM": "ON"
+      }
+    },
+    {
       "name": "Vulkan",
       "inherits": [ "Default" ],
       "cacheVariables": {
@@ -172,6 +182,11 @@
       "name": "ROCm 7",
       "inherits": [ "ROCm" ],
       "configurePreset": "ROCm 7"
+    },
+    {
+      "name": "ROCm 5 Polaris",
+      "inherits": [ "ROCm" ],
+      "configurePreset": "ROCm 5 Polaris"
     },
     {
       "name": "Vulkan",

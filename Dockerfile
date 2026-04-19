@@ -92,6 +92,29 @@ RUN --mount=type=cache,target=/root/.ccache \
         && cmake --install build --component HIP --strip
 RUN rm -f dist/lib/ollama/rocm/rocblas/library/*gfx90[06]*
 
+# Polaris (gfx803), e.g. Radeon RX 580 — HIP libraries built against ROCm 5.7.
+# Bundle this into the amd64 ROCm tarball by exporting OLLAMA_ROCM_BUILD_STAGE=rocm-polaris
+# when running scripts/build_linux.sh (see second amd64 buildx invocation there).
+FROM --platform=linux/amd64 rocm/dev-centos-7:5.7.1-complete AS rocm-polaris
+# Match root CMake minimum; use 3.27.x binary compatible with CentOS 7 glibc (avoid 3.31+ manylinux glibc).
+ARG CMAKEVERSION=3.27.9
+ARG NINJAVERSION=1.12.1
+RUN set -eux; \
+    sed -i.bak 's/mirrorlist=/#mirrorlist=/g; s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2>/dev/null || true; \
+    yum install -y curl ca-certificates unzip ccache \
+    && curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${CMAKEVERSION}/cmake-${CMAKEVERSION}-linux-x86_64.tar.gz" | tar xz -C /usr/local --strip-components 1 \
+    && curl -fsSL -o /tmp/ninja.zip "https://github.com/ninja-build/ninja/releases/download/v${NINJAVERSION}/ninja-linux.zip" \
+    && unzip /tmp/ninja.zip -d /usr/local/bin && rm -f /tmp/ninja.zip \
+    && yum clean all
+ENV PATH=/usr/local/bin:/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
+ENV CMAKE_GENERATOR=Ninja
+COPY CMakeLists.txt CMakePresets.json .
+COPY ml/backend/ggml/ggml ml/backend/ggml/ggml
+RUN --mount=type=cache,target=/root/.ccache \
+    cmake --preset 'ROCm 5 Polaris' \
+        && cmake --build --preset 'ROCm 5 Polaris' -- -l $(nproc) \
+        && cmake --install build --component HIP --strip
+
 FROM --platform=linux/arm64 nvcr.io/nvidia/l4t-jetpack:${JETPACK5VERSION} AS jetpack-5
 ARG CMAKEVERSION
 ARG NINJAVERSION
@@ -205,7 +228,8 @@ COPY --from=jetpack-5 dist/lib/ollama/ /lib/ollama/
 COPY --from=jetpack-6 dist/lib/ollama/ /lib/ollama/
 
 FROM scratch AS rocm
-COPY --from=rocm-7 dist/lib/ollama /lib/ollama
+ARG OLLAMA_ROCM_BUILD_STAGE=rocm-7
+COPY --from=${OLLAMA_ROCM_BUILD_STAGE} dist/lib/ollama /lib/ollama
 
 FROM ${FLAVOR} AS archive
 COPY --from=cpu dist/lib/ollama /lib/ollama

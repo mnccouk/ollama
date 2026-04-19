@@ -38,11 +38,14 @@ if echo $PLATFORM | grep "amd64" > /dev/null; then
     if echo $PLATFORM | grep "," > /dev/null ; then
        outDir="./dist/linux_amd64"
     fi
+    # Default rocm-7; set OLLAMA_ROCM_BUILD_STAGE=rocm-polaris for RX 580 (gfx803) / ROCm 5.7 HIP bundle.
+    ROCM_STAGE="${OLLAMA_ROCM_BUILD_STAGE:-rocm-7}"
     docker buildx build \
         --output type=local,dest=${outDir} \
         --platform=linux/amd64 \
         ${OLLAMA_COMMON_BUILD_ARGS} \
         --build-arg FLAVOR=rocm \
+        --build-arg OLLAMA_ROCM_BUILD_STAGE="${ROCM_STAGE}" \
         --target archive \
         -f Dockerfile \
         .
