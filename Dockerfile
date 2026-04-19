@@ -118,9 +118,11 @@ RUN set -eux; \
     && curl -fsSL -o /tmp/ninja.zip "https://github.com/ninja-build/ninja/releases/download/v${NINJAVERSION}/ninja-linux.zip" \
     && unzip /tmp/ninja.zip -d /usr/local/bin && rm -f /tmp/ninja.zip \
     && yum clean all
+# GCC 9 libstdc++ (C++17 <filesystem>); from centos-sclo-rh (vault-fixed repos). Only sclo-sclo stays disabled.
+RUN yum install -y --disablerepo=centos-sclo-sclo devtoolset-9-gcc-c++ \
+    && yum clean all
 ENV PATH=/usr/local/bin:/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
-# Image default is GCC 7 (devtoolset-7), which cannot compile Ollama's C++17 <filesystem> sources.
-# Use ROCm's LLVM for the whole configure/build so ggml-base and HIP agree on toolchain.
+# ROCm Clang for compile + HIP; --gcc-toolchain so Clang uses devtoolset-9 libstdc++ (system GCC7 is too old for <filesystem>).
 ENV CC=/opt/rocm/llvm/bin/clang
 ENV CXX=/opt/rocm/llvm/bin/clang++
 ENV CMAKE_GENERATOR=Ninja
@@ -128,6 +130,8 @@ COPY CMakeLists.txt CMakePresets.json .
 COPY ml/backend/ggml/ggml ml/backend/ggml/ggml
 RUN --mount=type=cache,target=/root/.ccache \
     cmake --preset 'ROCm 5 Polaris' \
+        -DCMAKE_C_FLAGS="--gcc-toolchain=/opt/rh/devtoolset-9/root/usr" \
+        -DCMAKE_CXX_FLAGS="--gcc-toolchain=/opt/rh/devtoolset-9/root/usr" \
         && cmake --build --preset 'ROCm 5 Polaris' -- -l $(nproc) \
         && cmake --install build --component HIP --strip
 
