@@ -143,3 +143,9 @@ if (GGML_STATIC)
 endif()
 
 target_link_libraries(ggml-hip PRIVATE ggml-base hip::host roc::rocblas roc::hipblas)
+
+# ROCm 5.7: hip_bf16-related helpers are emitted as strong symbols in every .cu; lld errors on
+# duplicate symbols. -z muldefs keeps the first definition (same as older bfd behaviour).
+if (OLLAMA_POLARIS_ROCM)
+    target_link_options(ggml-hip PRIVATE LINKER:-z,muldefs)
+endif()
