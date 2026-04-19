@@ -119,6 +119,10 @@ RUN set -eux; \
     && unzip /tmp/ninja.zip -d /usr/local/bin && rm -f /tmp/ninja.zip \
     && yum clean all
 ENV PATH=/usr/local/bin:/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH
+# Image default is GCC 7 (devtoolset-7), which cannot compile Ollama's C++17 <filesystem> sources.
+# Use ROCm's LLVM for the whole configure/build so ggml-base and HIP agree on toolchain.
+ENV CC=/opt/rocm/llvm/bin/clang
+ENV CXX=/opt/rocm/llvm/bin/clang++
 ENV CMAKE_GENERATOR=Ninja
 COPY CMakeLists.txt CMakePresets.json .
 COPY ml/backend/ggml/ggml ml/backend/ggml/ggml
