@@ -221,6 +221,10 @@ static std::string ggml_cuda_parse_uuid(cudaDeviceProp prop, int device_num) {
 #ifdef _WIN32
         snprintf(id, sizeof(id), "%d", device_num);
 #else
+    // hipDeviceProp_t.uuid exists from newer HIP; ROCm 5.7 and older do not.
+#if defined(GGML_USE_HIP) && (!defined(HIP_VERSION) || HIP_VERSION < 60000000)
+        snprintf(id, sizeof(id), "%d", device_num);
+#else
     try {
         std::string uuid = std::string(prop.uuid.bytes, 16);
 
@@ -233,6 +237,7 @@ static std::string ggml_cuda_parse_uuid(cudaDeviceProp prop, int device_num) {
     } catch (const std::exception &e) {
         snprintf(id, sizeof(id), "%d", device_num);
     }
+#endif
 #endif
 #endif
 
@@ -3381,7 +3386,7 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
 
             for (int i = 1; i <= concurrent_event->n_streams; ++i) {
                 cudaStream_t stream = cuda_ctx->stream(cuda_ctx->device, i);
-                CUDA_CHECK(cudaStreamWaitEvent(stream, concurrent_event->fork_event));
+                CUDA_CHECK(cudaStreamWaitEvent(stream, concurrent_event->fork_event, 0));
             }
         }
     };
@@ -3462,7 +3467,7 @@ static void evaluate_and_capture_cuda_graph(ggml_backend_cuda_context * cuda_ctx
                             // Wait on join events of forked streams in the main stream
                             CUDA_CHECK(cudaEventRecord(concurrent_event->join_events[i - 1],
                                                        cuda_ctx->stream(cuda_ctx->device, i)));
-                            CUDA_CHECK(cudaStreamWaitEvent(cuda_ctx->stream(), concurrent_event->join_events[i - 1]));
+                            CUDA_CHECK(cudaStreamWaitEvent(cuda_ctx->stream(), concurrent_event->join_events[i - 1], 0));
                         }
 
                         is_concurrent_event_active = false;
