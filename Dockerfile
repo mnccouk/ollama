@@ -99,9 +99,21 @@ FROM --platform=linux/amd64 rocm/dev-centos-7:5.7.1-complete AS rocm-polaris
 # Match root CMake minimum; use 3.27.x binary compatible with CentOS 7 glibc (avoid 3.31+ manylinux glibc).
 ARG CMAKEVERSION=3.27.9
 ARG NINJAVERSION=1.12.1
+# CentOS 7 is EOL: mirrorlist is dead and SCLo repos often break. Point all .repo files at vault,
+# then install only what we need while skipping SCLo collections (not required for curl/cmake/ninja).
 RUN set -eux; \
-    sed -i.bak 's/mirrorlist=/#mirrorlist=/g; s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*.repo 2>/dev/null || true; \
-    yum install -y curl ca-certificates unzip ccache \
+    for f in /etc/yum.repos.d/*.repo; do \
+        [ -f "$f" ] || continue; \
+        sed -i.bak \
+            -e 's/^mirrorlist=/#mirrorlist=/' \
+            -e 's|^# *baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|' \
+            -e 's|http://mirror.centos.org|http://vault.centos.org|g' \
+            "$f"; \
+    done; \
+    yum install -y \
+        --disablerepo=centos-sclo-sclo \
+        --disablerepo=centos-sclo-rh \
+        curl ca-certificates unzip ccache \
     && curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${CMAKEVERSION}/cmake-${CMAKEVERSION}-linux-x86_64.tar.gz" | tar xz -C /usr/local --strip-components 1 \
     && curl -fsSL -o /tmp/ninja.zip "https://github.com/ninja-build/ninja/releases/download/v${NINJAVERSION}/ninja-linux.zip" \
     && unzip /tmp/ninja.zip -d /usr/local/bin && rm -f /tmp/ninja.zip \
