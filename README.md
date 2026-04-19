@@ -8,7 +8,7 @@
 
 Start building with open models.
 
-> **Fork branch — work in progress:** This repository branch (`rx580_v2`) is experimental work to run Ollama on **older AMD GPUs** (for example Radeon **RX 580** / **gfx803**) via a **ROCm 5.7 Polaris** HIP build path. It is **not** official [Ollama](https://github.com/ollama/ollama) support, APIs and build steps may change, and **builds or inference may fail** until the work is finished. See `Dockerfile` (stage `rocm-polaris`), `CMakePresets.json` (`ROCm 5 Polaris`), and `scripts/build_linux.sh` (`OLLAMA_ROCM_BUILD_STAGE`).
+> **Fork branch — work in progress:** This repository branch (`rx580_v2`) is experimental work to run Ollama on **older AMD GPUs** (for example Radeon **RX 580** / **gfx803**) via a **ROCm 5.7 Polaris** HIP build path. It is **not** official [Ollama](https://github.com/ollama/ollama) support, APIs and build steps may change, and **builds or inference may fail** until the work is finished. See `Dockerfile` (stages `rocm-polaris`, `rocm-polaris-bundle`), `CMakePresets.json` (`ROCm 5 Polaris`), and `scripts/build_linux.sh` (`OLLAMA_ROCM_BUILD_STAGE=rocm-polaris` selects the Polaris ROCm bundle).
 
 ## Download
 

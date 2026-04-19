@@ -93,8 +93,8 @@ RUN --mount=type=cache,target=/root/.ccache \
 RUN rm -f dist/lib/ollama/rocm/rocblas/library/*gfx90[06]*
 
 # Polaris (gfx803), e.g. Radeon RX 580 — HIP libraries built against ROCm 5.7.
-# Bundle this into the amd64 ROCm tarball by exporting OLLAMA_ROCM_BUILD_STAGE=rocm-polaris
-# when running scripts/build_linux.sh (see second amd64 buildx invocation there).
+# Bundle into the amd64 ROCm tarball via scripts/build_linux.sh with
+# OLLAMA_ROCM_BUILD_STAGE=rocm-polaris (uses FLAVOR=rocm-polaris-bundle, not dynamic COPY --from).
 FROM --platform=linux/amd64 rocm/dev-centos-7:5.7.1-complete AS rocm-polaris
 # Match root CMake minimum; use 3.27.x binary compatible with CentOS 7 glibc (avoid 3.31+ manylinux glibc).
 ARG CMAKEVERSION=3.27.9
@@ -228,8 +228,10 @@ COPY --from=jetpack-5 dist/lib/ollama/ /lib/ollama/
 COPY --from=jetpack-6 dist/lib/ollama/ /lib/ollama/
 
 FROM scratch AS rocm
-ARG OLLAMA_ROCM_BUILD_STAGE=rocm-7
-COPY --from=${OLLAMA_ROCM_BUILD_STAGE} dist/lib/ollama /lib/ollama
+COPY --from=rocm-7 dist/lib/ollama /lib/ollama
+
+FROM scratch AS rocm-polaris-bundle
+COPY --from=rocm-polaris dist/lib/ollama /lib/ollama
 
 FROM ${FLAVOR} AS archive
 COPY --from=cpu dist/lib/ollama /lib/ollama
