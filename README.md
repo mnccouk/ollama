@@ -8,7 +8,59 @@
 
 Start building with open models.
 
-> **Fork branch — work in progress:** This repository branch (`rx580_v2`) is experimental work to run Ollama on **older AMD GPUs** (for example Radeon **RX 580** / **gfx803**) via a **ROCm 5.7 Polaris** HIP build path. It is **not** official [Ollama](https://github.com/ollama/ollama) support, APIs and build steps may change, and **builds or inference may fail** until the work is finished. See `Dockerfile` (stages `rocm-polaris`, `rocm-polaris-bundle`), `CMakePresets.json` (`ROCm 5 Polaris`), and `scripts/build_linux.sh` (`OLLAMA_ROCM_BUILD_STAGE=rocm-polaris` selects the Polaris ROCm bundle). **Faster Docker builds (no CUDA/Vulkan/MLX):** set `OLLAMA_DOCKER_TARGET=ollama-amd64-rocm` or `ollama-amd64-rocm-polaris` when running `scripts/build_docker.sh`.
+> **Fork branch — work in progress (`rx580_v2`):** Experimental support for **older AMD GPUs** (e.g. Radeon **RX 580** / **gfx803**) using a **ROCm 5.7 Polaris** HIP build. This is **not** official [Ollama](https://github.com/ollama/ollama) support; behaviour may change.
+
+### RX 580 / ROCm Polaris: build and run
+
+These flows build HIP runners for **`gfx803`** against **ROCm 5.7** (see `Dockerfile` stages `rocm-polaris` and `rocm-polaris-bundle`, CMake preset **`ROCm 5 Polaris`** in `CMakePresets.json`).
+
+#### Docker image (recommended for a smaller, AMD-focused image)
+
+Build a **single-arch** image that bundles **CPU + Polaris HIP** only (skips CUDA / Vulkan / MLX compile in the default graph):
+
+```shell
+export OLLAMA_DOCKER_TARGET=ollama-amd64-rocm-polaris
+# Optional: amd64-only saves time vs default multi-platform in scripts/env.sh
+export PLATFORM=linux/amd64
+./scripts/build_docker.sh
+```
+
+- **Tag:** `ollama/ollama:$VERSION` (from `VERSION` / `git describe`) is the Polaris image when using this target. The script skips the extra `:…-rocm` second build because the main image is already ROCm-only.
+- **Local `--load`:** `scripts/build_docker.sh` forces a **single** `--platform` for load (see script output); override with `DOCKER_LOAD_PLATFORM` if needed.
+
+**Run** (host needs a working **AMDGPU / kfd** stack; match **ROCm 5.7** user-space to the HIP bundle you built. Do **not** set `HIP_PATH` or `LD_LIBRARY_PATH` to `/opt/rocm` in the container—this image ships runners under **`/usr/lib/ollama`**.)
+
+```shell
+docker run --device /dev/kfd --device /dev/dri \
+  --group-add video --group-add render \
+  -v ollama:/root/.ollama -p 11434:11434 \
+  ollama/ollama:<VERSION>
+```
+
+Use the same **`<VERSION>`** string the build printed (for example `0.1.0`). Add `--name`, `-d`, etc. as you prefer.
+
+**Slim image without Polaris (ROCm 7 HIP only):** `OLLAMA_DOCKER_TARGET=ollama-amd64-rocm` — same script; still skips CUDA/Vulkan/MLX, but uses the default **gfx** set from **`rocm-7`**, not **gfx803**.
+
+#### Linux release tarball (optional)
+
+To produce the **amd64 ROCm** bundle under `dist/` with the Polaris HIP libraries:
+
+```shell
+export OLLAMA_ROCM_BUILD_STAGE=rocm-polaris
+export PLATFORM=linux/amd64   # optional
+./scripts/build_linux.sh
+```
+
+That selects **`FLAVOR=rocm-polaris-bundle`** so the archive uses the Polaris HIP stage (see `scripts/build_linux.sh`).
+
+#### Verify the bundle targets Polaris
+
+Inside an image or unpack dir, ROCm Tensile data should mention **`gfx803`**, for example:
+
+```shell
+docker run --rm --entrypoint '' ollama/ollama:<VERSION> \
+  sh -c 'ls /usr/lib/ollama/rocm/rocblas/library 2>/dev/null | grep -F gfx803 | head'
+```
 
 ## Download
 
