@@ -32,8 +32,17 @@ else
     DOCKER_PLATFORM="${PLATFORM}"
 fi
 
+# Optional: skip CUDA/Vulkan/MLX runner builds (much faster on AMD-only machines).
+# Examples: OLLAMA_DOCKER_TARGET=ollama-amd64-rocm  or  ollama-amd64-rocm-polaris
+BUILD_TARGET_OPT=""
+if [ -n "${OLLAMA_DOCKER_TARGET:-}" ]; then
+    BUILD_TARGET_OPT="--target ${OLLAMA_DOCKER_TARGET}"
+    echo "Docker build target: ${OLLAMA_DOCKER_TARGET}" >&2
+fi
+
 docker buildx build \
     ${LOAD_OR_PUSH} \
+    ${BUILD_TARGET_OPT} \
     --platform=${DOCKER_PLATFORM} \
     ${OLLAMA_COMMON_BUILD_ARGS} \
     -f Dockerfile \
@@ -41,12 +50,20 @@ docker buildx build \
     .
 
 if echo $PLATFORM | grep "amd64" > /dev/null; then
-    docker buildx build \
-        ${LOAD_OR_PUSH} \
-        --platform=linux/amd64 \
-        ${OLLAMA_COMMON_BUILD_ARGS} \
-        --build-arg FLAVOR=rocm \
-        -f Dockerfile \
-        -t ${FINAL_IMAGE_REPO}:$VERSION-rocm \
-        .
+    case "${OLLAMA_DOCKER_TARGET:-}" in
+        ollama-amd64-rocm|ollama-amd64-rocm-polaris)
+            echo "Skipping :${VERSION}-rocm build (main image is already ROCm-only for this target)." >&2
+            ;;
+        *)
+            docker buildx build \
+                ${LOAD_OR_PUSH} \
+                ${BUILD_TARGET_OPT} \
+                --platform=linux/amd64 \
+                ${OLLAMA_COMMON_BUILD_ARGS} \
+                --build-arg FLAVOR=rocm \
+                -f Dockerfile \
+                -t ${FINAL_IMAGE_REPO}:$VERSION-rocm \
+                .
+            ;;
+    esac
 fi

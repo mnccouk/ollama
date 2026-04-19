@@ -237,6 +237,50 @@ FROM ${FLAVOR} AS archive
 COPY --from=cpu dist/lib/ollama /lib/ollama
 COPY --from=build /bin/ollama /bin/ollama
 
+# Optional fast AMD ROCm-only images (no CUDA / Vulkan / MLX runner compiles).
+# Default final stage below remains the full upstream image.
+#   docker buildx build --target ollama-amd64-rocm ...
+#   docker buildx build --target ollama-amd64-rocm-polaris ...
+FROM rocm AS archive-amd64-rocm
+COPY --from=cpu dist/lib/ollama /lib/ollama
+COPY --from=build /bin/ollama /bin/ollama
+
+FROM rocm-polaris-bundle AS archive-amd64-rocm-polaris
+COPY --from=cpu dist/lib/ollama /lib/ollama
+COPY --from=build /bin/ollama /bin/ollama
+
+FROM ubuntu:24.04 AS ollama-amd64-rocm
+RUN apt-get update \
+    && apt-get install -y ca-certificates libvulkan1 libopenblas0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=archive-amd64-rocm /bin /usr/bin
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+COPY --from=archive-amd64-rocm /lib/ollama /usr/lib/ollama
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV OLLAMA_HOST=0.0.0.0:11434
+EXPOSE 11434
+ENTRYPOINT ["/bin/ollama"]
+CMD ["serve"]
+
+FROM ubuntu:24.04 AS ollama-amd64-rocm-polaris
+RUN apt-get update \
+    && apt-get install -y ca-certificates libvulkan1 libopenblas0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=archive-amd64-rocm-polaris /bin /usr/bin
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+COPY --from=archive-amd64-rocm-polaris /lib/ollama /usr/lib/ollama
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV OLLAMA_HOST=0.0.0.0:11434
+EXPOSE 11434
+ENTRYPOINT ["/bin/ollama"]
+CMD ["serve"]
+
 FROM ubuntu:24.04
 RUN apt-get update \
     && apt-get install -y ca-certificates libvulkan1 libopenblas0 \
