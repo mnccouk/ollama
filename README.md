@@ -14,16 +14,35 @@ Start building with open models.
 
 These flows build HIP runners for **`gfx803`** against **ROCm 5.7** (see `Dockerfile` stages `rocm-polaris` and `rocm-polaris-bundle`, CMake preset **`ROCm 5 Polaris`** in `CMakePresets.json`).
 
+#### Quickstart (copy/paste)
+
+```shell
+# Build (match VERSION to the Ollama release you want this build to identify as)
+export VERSION=0.21.0
+export OLLAMA_DOCKER_TARGET=ollama-amd64-rocm-polaris
+export PLATFORM=linux/amd64
+./scripts/build_docker.sh
+
+# Run
+docker run --device /dev/kfd --device /dev/dri \
+  --group-add video --group-add render \
+  -v ollama:/root/.ollama -p 11434:11434 \
+  ollama/ollama:$VERSION
+```
+
 #### Docker image (recommended for a smaller, AMD-focused image)
 
 Build a **single-arch** image that bundles **CPU + Polaris HIP** only (skips CUDA / Vulkan / MLX compile in the default graph):
 
 ```shell
+export VERSION=0.21.0
 export OLLAMA_DOCKER_TARGET=ollama-amd64-rocm-polaris
 # Optional: amd64-only saves time vs default multi-platform in scripts/env.sh
 export PLATFORM=linux/amd64
 ./scripts/build_docker.sh
 ```
+
+The example above is a known-good pattern for this branch: set `VERSION` explicitly and keep it aligned with the Ollama release you want to identify/build as.
 
 - **Tag:** `ollama/ollama:$VERSION` (from `VERSION` / `git describe`) is the Polaris image when using this target. The script skips the extra `:…-rocm` second build because the main image is already ROCm-only.
 - **Local `--load`:** `scripts/build_docker.sh` forces a **single** `--platform` for load (see script output); override with `DOCKER_LOAD_PLATFORM` if needed.
@@ -37,9 +56,15 @@ docker run --device /dev/kfd --device /dev/dri \
   ollama/ollama:<VERSION>
 ```
 
-Use the same **`<VERSION>`** string the build printed (for example `0.1.0`). Add `--name`, `-d`, etc. as you prefer.
+Use the same **`<VERSION>`** string the build printed (for example `0.21.0`). Add `--name`, `-d`, etc. as you prefer.
 
 **Slim image without Polaris (ROCm 7 HIP only):** `OLLAMA_DOCKER_TARGET=ollama-amd64-rocm` — same script; still skips CUDA/Vulkan/MLX, but uses the default **gfx** set from **`rocm-7`**, not **gfx803**.
+
+#### Helpful troubleshooting notes
+
+- **Keep version metadata current for registry compatibility:** if image pushes/pulls fail with HTTP 412 or stale-version behavior, ensure `VERSION` matches an actual current Ollama release and rebuild so embedded version metadata is not stale.
+- **`default_num_ctx=4096` is expected on RX 580-class VRAM tiers:** the server chooses a VRAM-tier default context (4k / 32k / 256k). On 8 GiB cards this usually resolves to 4096 unless overridden.
+- **To use larger context explicitly:** set `OLLAMA_CONTEXT_LENGTH`, configure `PARAMETER num_ctx` in a Modelfile, or pass request `options.num_ctx`. Increase gradually to avoid VRAM OOM.
 
 #### Linux release tarball (optional)
 
